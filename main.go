@@ -12,7 +12,7 @@ func main() {
 	router.GET("/pdfs", listpdfsHandler)
 	router.POST("/pdfs", createpdfHandler)
 	router.GET("/pdfs/:id", getpdfbyid)
-	router.Run("localhost:8085")
+	router.Run("localhost:8080")
 }
 
 func listpdfsHandler(c *gin.Context) {

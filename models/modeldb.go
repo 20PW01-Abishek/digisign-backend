@@ -45,7 +45,9 @@ func ListPdfsHandler() []Pdf {
 }
 
 func CreatePdfHandler(pdfs Pdf) {
-	db, err := sql.Open("mysql", dbuser+"@tcp(127.0.0.1:3306)/"+dbname)
+	// db, err := sql.Open("mysql", dbuser+"@tcp(127.0.0.1:3306)/"+dbname)
+	dsn := fmt.Sprintf("%s:%s@tcp(localhost:3306)/%s", dbuser, dbpassword, dbname)
+    db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		fmt.Println("Err", err.Error())
 	}
@@ -62,7 +64,9 @@ func CreatePdfHandler(pdfs Pdf) {
 }
 
 func GetPdfById(id string) *Pdf {
-	db, err := sql.Open("mysql", dbuser+"@tcp(127.0.0.1:3306)/"+dbname)
+	// db, err := sql.Open("mysql", dbuser+"@tcp(127.0.0.1:3306)/"+dbname)
+	dsn := fmt.Sprintf("%s:%s@tcp(localhost:3306)/%s", dbuser, dbpassword, dbname)
+    db, err := sql.Open("mysql", dsn)
 	mov := &Pdf{}
 	if err != nil {
 		fmt.Println("Err", err.Error())
