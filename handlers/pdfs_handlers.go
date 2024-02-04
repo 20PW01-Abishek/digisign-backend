@@ -2,6 +2,8 @@
 package handlers
 
 import (
+    "fmt"
+    "io/ioutil"
 	"log"
     "net/http"
 	"digisign-backend/db"
@@ -68,9 +70,52 @@ func ListPDFsHandler(c *gin.Context) {
     c.JSON(http.StatusOK, pdfs)
 }
 
-// CreatePDFHandler uploads a new PDF.
 func CreatePDFHandler(c *gin.Context) {
+	// Parse the incoming request to extract the PDF file
+	file, _, err := c.Request.FormFile("pdf")
+	if err != nil {
+		log.Printf("Failed to parse PDF file: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse PDF file"})
+		return
+	}
+	defer file.Close()
 
+	// Read the content of the PDF file
+	pdfContent, err := ioutil.ReadAll(file)
+	if err != nil {
+		log.Printf("Failed to read PDF content: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read PDF content"})
+		return
+	}
+
+	// Connect to the database
+	database, err := db.ConnectDB()
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to connect to database"})
+		return
+	}
+	defer database.Close()
+
+	// Insert the PDF content into the database
+	insertQuery := "INSERT INTO pdfs (filename, uploader_id, pdf_blob) VALUES (?, ?, ?)"
+	result, err := database.Exec(insertQuery, "example.pdf", 123, pdfContent)
+	if err != nil {
+		log.Printf("Failed to insert PDF into database: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to insert PDF into database"})
+		return
+	}
+
+	// Get the ID of the inserted PDF
+	pdfID, err := result.LastInsertId()
+	if err != nil {
+		log.Printf("Failed to get ID of inserted PDF: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get ID of inserted PDF"})
+		return
+	}
+
+	// Return success response with ID of the inserted PDF
+	c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("PDF uploaded successfully with ID: %d", pdfID)})
 }
 
 // gets PDF by supplying id.
