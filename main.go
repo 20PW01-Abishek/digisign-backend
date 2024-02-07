@@ -11,6 +11,6 @@ func main() {
 	router.GET("/",handlers.GreetCreators)
     router.GET("/pdfs/list", handlers.ListPDFsHandler)
     router.POST("/pdfs/create", handlers.CreatePDFHandler)
-    router.GET("/pdfs/:id/view", handlers.GetPDFByIDHandler)
+    router.GET("/getpdf", handlers.GetPDFByIDHandler)
     router.Run("localhost:8080")
 }
