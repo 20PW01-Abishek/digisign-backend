@@ -118,6 +118,49 @@ func CreatePDFHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("PDF uploaded successfully with ID: %d", pdfID)})
 }
 
-// gets PDF by supplying id.
+// GetPDFByIDHandler retrieves a PDF by ID.
 func GetPDFByIDHandler(c *gin.Context) {
+	// Get the PDF ID from the query parameter
+	pdfID := c.Query("id")
+
+	if pdfID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID parameter is required"})
+		return
+	}
+
+	// Connect to the database
+	db, err := db.ConnectDB()
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to connect to database"})
+		return
+	}
+	defer db.Close()
+
+	// Query the pdfs table to retrieve the PDF by ID
+	var (
+		filename   string
+		uploaderID int
+		uploadDate string
+		pdfBlob    []byte
+	)
+	err = db.QueryRow("SELECT filename, uploader_id, upload_date, pdf_blob FROM pdfs WHERE pdf_id = ?", pdfID).
+		Scan(&filename, &uploaderID, &uploadDate, &pdfBlob)
+	if err != nil {
+		log.Fatalf("Failed to retrieve PDF: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve PDF"})
+		return
+	}
+
+	// Construct the PDF response
+	pdf := map[string]interface{}{
+		"pdf_id":      pdfID,
+		"filename":    filename,
+		"uploader_id": uploaderID,
+		"upload_date": uploadDate,
+		"pdf_blob": pdfBlob,
+	}
+
+	// Return the PDF as JSON response
+	c.JSON(http.StatusOK, pdf)
 }
