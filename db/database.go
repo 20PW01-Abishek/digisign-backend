@@ -9,6 +9,7 @@ import (
 
 var db *sqlx.DB
 
+
 // ConnectDB connects to the MySQL database
 func ConnectDB() (*sqlx.DB, error) {
     dataSourceName := "admin:sqladmin@tcp(127.0.0.1:3306)/digisign"
