@@ -1,0 +1,5 @@
+# virtual env files
+/venv/
+
+# env vars
+.env
