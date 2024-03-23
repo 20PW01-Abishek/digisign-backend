@@ -1,6 +1,6 @@
 # api/pdf_controller.py
 from flask import Blueprint, request, jsonify, Response
-from controllers.base_controller import BaseController
+from controllers.base_controller import BaseController, base_bp
 from db.connection import DatabaseConnection
 from pymongo.errors import PyMongoError
 from gridfs import GridFS
@@ -8,11 +8,11 @@ from bson import ObjectId
 import io
 import os
 
-pdf_bp = Blueprint('pdf', __name__)
+pdf_bp = Blueprint("pdf", __name__)
 
 class PDFController(BaseController):
     @staticmethod
-    @pdf_bp.route('/pdfs/create', methods=['POST'])
+    @base_bp.route('/pdfs/create', methods=['POST'])
     def upload_pdf():
         try:
             user_id = '123'
@@ -33,7 +33,7 @@ class PDFController(BaseController):
 
 
     @staticmethod
-    @pdf_bp.route('/pdfs/user', methods=['GET'])
+    @base_bp.route('/pdfs/user', methods=['GET'])
     def get_pdfs_by_user():
         try:
             user_id = request.args.get('user_id')
@@ -54,7 +54,7 @@ class PDFController(BaseController):
             return jsonify({'error': str(e)}), 500
 
     @staticmethod
-    @pdf_bp.route('/pdfs', methods=['GET'])
+    @base_bp.route('/pdfs', methods=['GET'])
     def get_pdf_by_id():
         try:
             file_id = request.args.get('file_id')
@@ -78,7 +78,7 @@ class PDFController(BaseController):
             return jsonify({'error': str(e)}), 500
 
     @staticmethod
-    @pdf_bp.route('/pdfs/share', methods=['POST'])
+    @base_bp.route('/pdfs/share', methods=['POST'])
     def share_pdf():
         try:
             emails = request.json.get('emails')
@@ -114,7 +114,7 @@ class PDFController(BaseController):
             return jsonify({'error': str(e)}), 500
 
     @staticmethod
-    @pdf_bp.route('/pdfs/remove_share', methods=['POST'])
+    @base_bp.route('/pdfs/remove_share', methods=['POST'])
     def remove_shared_access():
         try:
             emails = request.json.get('emails')
@@ -147,7 +147,7 @@ class PDFController(BaseController):
             return jsonify({'error': str(e)}), 500
 
     @staticmethod
-    @pdf_bp.route('/pdfs/sent_for_signing', methods=['GET'])
+    @base_bp.route('/pdfs/sent_for_signing', methods=['GET'])
     def get_sent_for_signing_pdfs():
         try:
             user_id = request.args.get('user_id')
