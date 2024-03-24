@@ -11,7 +11,6 @@ def verify_firebase_token(token):
 
 def check_token():
     token = request.headers.get('Authorization')
-    print(f"Auth token : {token}", not token)
     if not token:
         return jsonify({'message': 'Missing token'}), 401
 
