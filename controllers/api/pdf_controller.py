@@ -15,7 +15,11 @@ class PDFController(BaseController):
     @base_bp.route('/pdfs/create', methods=['POST'])
     def upload_pdf():
         try:
-            user_id = '123'
+            user_id = request.form.get('user_id')
+
+            if not user_id:
+                return jsonify({'error': 'User ID is missing in the request body'}), 400
+            
             db_connection = DatabaseConnection(os.getenv("MONGODB_URI"))
             client = db_connection.get_connection()
             
@@ -173,5 +177,62 @@ class PDFController(BaseController):
             } for pdf in sent_for_signing_pdfs]
 
             return jsonify({'pdfs': pdf_list}), 200
+        except PyMongoError as e:
+            return jsonify({'error': str(e)}), 500
+
+    @staticmethod
+    @base_bp.route('/pdfs/to_sign', methods=['GET'])
+    def get_pdfs_to_sign():
+        try:
+            user_email = request.args.get('user_email')
+
+            if not user_email:
+                return jsonify({'error': 'User email is required as a query parameter'}), 400
+
+            db_connection = DatabaseConnection(os.getenv("MONGODB_URI"))
+            client = db_connection.get_connection()
+
+            db = client.digisign_activity
+            shared_pdf_collection = db.fs.files
+
+            # Retrieve all documents that have a shared_to field
+            shared_pdfs = shared_pdf_collection.find({'shared_to': {'$exists': True}})
+
+            # Filter documents to include only those where the specified user_email exists with a False flag
+            filtered_pdfs = [
+                pdf for pdf in shared_pdfs if pdf['shared_to'].get(user_email, False) is False
+            ]
+
+            # Filter out documents where user_email does not exist in the shared_to field
+            filtered_pdfs = [pdf for pdf in filtered_pdfs if user_email in pdf['shared_to']]
+
+            pdf_list = [{
+                'file_id': str(pdf['_id']),
+                'filename': pdf['filename'],
+                'shared_to': pdf['shared_to']
+            } for pdf in filtered_pdfs]
+
+            return jsonify({'pdfs': pdf_list}), 200
+        except PyMongoError as e:
+            return jsonify({'error': str(e)}), 500
+
+    @base_bp.route('/pdfs/delete', methods=['POST'])
+    def delete_pdfs():
+        try:
+            file_ids = request.json.get('file_ids')
+
+            if not file_ids:
+                return jsonify({'error': 'File IDs are required'}), 400
+
+            db_connection = DatabaseConnection(os.getenv("MONGODB_URI"))
+            client = db_connection.get_connection()
+
+            db = client.digisign_activity
+            shared_pdf_collection = db.fs.files
+
+            for file_id in file_ids:
+                shared_pdf_collection.delete_one({'_id': ObjectId(file_id)})
+
+            return jsonify({'message': 'PDFs deleted successfully'}), 200
         except PyMongoError as e:
             return jsonify({'error': str(e)}), 500
