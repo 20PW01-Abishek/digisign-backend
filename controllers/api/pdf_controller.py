@@ -195,15 +195,12 @@ class PDFController(BaseController):
             db = client.digisign_activity
             shared_pdf_collection = db.fs.files
 
-            # Retrieve all documents that have a shared_to field
             shared_pdfs = shared_pdf_collection.find({'shared_to': {'$exists': True}})
 
-            # Filter documents to include only those where the specified user_email exists with a False flag
             filtered_pdfs = [
                 pdf for pdf in shared_pdfs if pdf['shared_to'].get(user_email, False) is False
             ]
 
-            # Filter out documents where user_email does not exist in the shared_to field
             filtered_pdfs = [pdf for pdf in filtered_pdfs if user_email in pdf['shared_to']]
 
             pdf_list = [{
@@ -234,5 +231,35 @@ class PDFController(BaseController):
                 shared_pdf_collection.delete_one({'_id': ObjectId(file_id)})
 
             return jsonify({'message': 'PDFs deleted successfully'}), 200
+        except PyMongoError as e:
+            return jsonify({'error': str(e)}), 500
+
+    @base_bp.route('/pdfs/update', methods=['POST'])
+    def update_pdf():
+        try:
+            file_id = request.form.get('file_id')
+            user_id = request.form.get('user_id')
+
+            if not file_id:
+                return jsonify({'error': 'File ID is missing in the request body'}), 400
+
+            updated_file = request.files['pdf']
+
+            db_connection = DatabaseConnection(os.getenv("MONGODB_URI"))
+            client = db_connection.get_connection()
+            db = client.digisign_activity
+            fs = GridFS(db)
+
+            if fs.exists({"_id": ObjectId(file_id)}):
+                existing_file = fs.get(ObjectId(file_id))
+
+                updated_file_data = updated_file.read()
+
+                metadata = existing_file.metadata if existing_file.metadata is not None else {}
+                fs.put(updated_file_data, filename=existing_file.filename, _id=ObjectId(file_id), user_id=user_id, **metadata)
+
+                return jsonify({'message': 'PDF updated successfully', 'file_id': str(file_id)}), 200
+            else:
+                return jsonify({'error': 'File not found with the provided file_id'}), 404
         except PyMongoError as e:
             return jsonify({'error': str(e)}), 500
