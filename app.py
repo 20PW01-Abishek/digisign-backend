@@ -5,6 +5,7 @@ from db.connection import DatabaseConnection
 from dotenv import load_dotenv
 import os
 from firebase_admin import credentials, initialize_app
+from flask_cors import CORS
 
 app = Flask(__name__)
 
@@ -28,6 +29,9 @@ firebase_credentials = {
 # Initialize Firebase Admin SDK with service account credentials
 cred = credentials.Certificate(firebase_credentials)
 initialize_app(cred)
+
+# enable CORS
+CORS(app)
 
 # register blueprint
 app.register_blueprint(base_bp)
