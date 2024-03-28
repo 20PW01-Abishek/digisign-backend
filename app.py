@@ -38,4 +38,4 @@ app.register_blueprint(base_bp)
 app.register_blueprint(pdf_bp)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=8001)
