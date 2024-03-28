@@ -252,14 +252,62 @@ class PDFController(BaseController):
 
             if fs.exists({"_id": ObjectId(file_id)}):
                 existing_file = fs.get(ObjectId(file_id))
+                metadata = existing_file.metadata if existing_file.metadata is not None else {}
+
+                fs.delete(ObjectId(file_id))
 
                 updated_file_data = updated_file.read()
-
-                metadata = existing_file.metadata if existing_file.metadata is not None else {}
-                fs.put(updated_file_data, filename=existing_file.filename, _id=ObjectId(file_id), user_id=user_id, **metadata)
+                fs.put(updated_file_data, filename=updated_file.filename, _id=ObjectId(file_id), user_id=user_id, **metadata)
 
                 return jsonify({'message': 'PDF updated successfully', 'file_id': str(file_id)}), 200
             else:
                 return jsonify({'error': 'File not found with the provided file_id'}), 404
         except PyMongoError as e:
+            return jsonify({'error': str(e)}), 500
+
+    @base_bp.route('/pdfs/sign', methods=['POST'])
+    def sign_pdf():
+        try:
+            file_id = request.form.get('file_id')
+            user_email = request.form.get('user_email')
+
+            if not file_id:
+                return jsonify({'error': 'File ID is missing in the request body'}), 400
+            if not user_email:
+                return jsonify({'error': 'User email is missing in the request body'}), 400
+
+            updated_file = request.files['pdf']
+
+            db_connection = DatabaseConnection(os.getenv("MONGODB_URI"))
+            client = db_connection.get_connection()
+
+            db = client.digisign_activity
+            shared_pdf_collection = db.fs.files
+
+            pdf_metadata = shared_pdf_collection.find_one({'_id': ObjectId(file_id)})
+
+            if not pdf_metadata:
+                return jsonify({'error': 'PDF file not found'}), 404
+
+            shared_to = pdf_metadata.get('shared_to', {})
+
+            if not shared_to or user_email not in shared_to:
+                return jsonify({'error': 'Access denied'}), 403
+
+            shared_to[user_email] = True
+
+            metadata = pdf_metadata.copy()
+            del metadata['_id']
+            del metadata['filename']
+
+            fs = GridFS(db)
+
+            fs.delete(ObjectId(file_id))
+
+            updated_file_data = updated_file.read()
+
+            fs.put(updated_file_data, filename=updated_file.filename, _id=ObjectId(file_id), **metadata)
+
+            return jsonify({'message': 'PDF signed successfully'}), 200
+        except Exception as e:
             return jsonify({'error': str(e)}), 500
