@@ -11,18 +11,20 @@ import os
 pdf_bp = Blueprint("pdf", __name__)
 
 class PDFController(BaseController):
+
     @staticmethod
     @base_bp.route('/pdfs/create', methods=['POST'])
     def upload_pdf():
         try:
             user_id = request.form.get('user_id')
+            user_email = request.form.get('user_email')
 
             if not user_id:
                 return jsonify({'error': 'User ID is missing in the request body'}), 400
-            
+
             db_connection = DatabaseConnection(os.getenv("MONGODB_URI"))
             client = db_connection.get_connection()
-            
+
             db = client.digisign_activity
             fs = GridFS(db)
 
@@ -30,11 +32,13 @@ class PDFController(BaseController):
             file_data = file.read()
 
             file_id = fs.put(file_data, filename=file.filename, user_id=user_id)
-            
+
+            shared_to = {user_email: True} if user_email else {}
+
+            db.fs.files.update_one({'_id': file_id}, {'$set': {'shared_to': shared_to}})
             return jsonify({'file_id': str(file_id)}), 200
         except PyMongoError as e:
             return jsonify({'error': str(e)}), 500
-
 
     @staticmethod
     @base_bp.route('/pdfs/user', methods=['GET'])
