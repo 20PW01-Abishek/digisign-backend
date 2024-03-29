@@ -33,7 +33,7 @@ class PDFController(BaseController):
 
             file_id = fs.put(file_data, filename=file.filename, user_id=user_id)
 
-            shared_to = {user_email: True} if user_email else {}
+            shared_to = {user_email: False} if user_email else {}
 
             db.fs.files.update_one({'_id': file_id}, {'$set': {'shared_to': shared_to}})
             return jsonify({'file_id': str(file_id)}), 200
