@@ -55,7 +55,8 @@ class PDFController(BaseController):
             fs = GridFS(db)
 
             pdf_files = fs.find({'user_id': user_id})
-            pdf_list = [{'file_id': str(pdf._id), 'filename': pdf.filename} for pdf in pdf_files]
+            
+            pdf_list = [{'file_id': str(pdf._id), 'filename': pdf.filename, 'shared_to': pdf.shared_to if hasattr(pdf, 'shared_to') else {}} for pdf in pdf_files]
 
             return jsonify({'pdfs': pdf_list}), 200
         except PyMongoError as e:
@@ -202,15 +203,14 @@ class PDFController(BaseController):
             shared_pdfs = shared_pdf_collection.find({'shared_to': {'$exists': True}})
 
             filtered_pdfs = [
-                pdf for pdf in shared_pdfs if pdf['shared_to'].get(user_email, False) is False
+                pdf for pdf in shared_pdfs
             ]
 
             filtered_pdfs = [pdf for pdf in filtered_pdfs if user_email in pdf['shared_to']]
 
             pdf_list = [{
                 'file_id': str(pdf['_id']),
-                'filename': pdf['filename'],
-                'shared_to': pdf['shared_to']
+                'filename': pdf['filename']
             } for pdf in filtered_pdfs]
 
             return jsonify({'pdfs': pdf_list}), 200
