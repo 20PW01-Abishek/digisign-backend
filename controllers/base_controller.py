@@ -11,7 +11,6 @@ class BaseController:
         if response:
             return response
 
-    
     @staticmethod
     @base_bp.route('/')
     def index():
