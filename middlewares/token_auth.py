@@ -10,6 +10,13 @@ def verify_firebase_token(token):
         return None, str(e)
 
 def check_token():
+    if request.method == 'OPTIONS':
+        # Handle preflight request
+        response = jsonify({'message': 'Preflight request successful'})
+        response.headers.add('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE')
+        response.headers.add('Access-Control-Allow-Headers', 'Authorization, Content-Type')
+        return response
+
     token = request.headers.get('Authorization')
     if not token:
         return jsonify({'message': 'Missing token'}), 401
