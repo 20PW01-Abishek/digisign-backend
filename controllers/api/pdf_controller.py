@@ -5,6 +5,7 @@ from db.connection import DatabaseConnection
 from pymongo.errors import PyMongoError
 from gridfs import GridFS
 from bson import ObjectId
+from services.send_email import send_email
 import io
 import os
 
@@ -112,6 +113,7 @@ class PDFController(BaseController):
                     for email in emails:
                         if email not in shared_to or shared_to[email] is True:
                             shared_to[email] = False
+                            send_email(email)
 
                     shared_pdf_collection.update_one(
                         {'_id': ObjectId(file_id)},
@@ -120,6 +122,8 @@ class PDFController(BaseController):
 
             return jsonify({'message': 'PDFs shared successfully'}), 200
         except PyMongoError as e:
+            return jsonify({'error': str(e)}), 500
+        except Exception as e:
             return jsonify({'error': str(e)}), 500
 
     @staticmethod
